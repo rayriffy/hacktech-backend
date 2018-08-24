@@ -24,10 +24,18 @@ jobs:
           name: Config .env file
           command: |
             cp .env.example .env
+      - restore_cache:
+          keys:
+            - dependencies-{{ checksum "composer.json" }}
+            - dependencies-
       - run:
           name: Manage Composer Packages
           command: |
             composer install
+      - save_cache:
+          key: dependencies-{{ checksum "package.json" }}
+          paths:
+            - vendor
       - run:
           name: Generate Key
           command: |
