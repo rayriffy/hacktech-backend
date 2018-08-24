@@ -288,6 +288,129 @@ Route::get('transaction/{trans_id}', function ($trans_id) {
   }
 
   // TODO
+
+});
+
+Route::put('user', function (Request $request) {
+  $request = $request->json()->all();
+  $data = $request['data'];
+  $count = 0;
+
+  if(empty($data["user"]["id"])) {
+    return array(
+      "response" => "error",
+      "remark" => "missing some/all payload"
+    );
+  }
+
+  if(!(USER::where('id', $data["user"]["id"])->exists())) {
+    return array(
+      "response" => "error",
+      "remark" => "user not found"
+    );
+  }
+
+  if(!empty($data["user"]["name"])) {
+    if(!(USER::where('id', $data["user"]["id"])->update(["name" => $data["user"]["name"]]))) {
+      return array(
+        "response" => "error",
+        "remark" => "that's an unexpected one..."
+      );
+    }
+    else {
+      $count++;
+    }
+  }
+
+  if(!empty($data["user"]["email"])) {
+    if(!(USER::where('id', $data["user"]["id"])->update(["email" => $data["user"]["email"]]))) {
+      return array(
+        "response" => "error",
+        "remark" => "that's an unexpected one..."
+      );
+    }
+    else {
+      $count++;
+    }
+  }
+
+  if(!empty($data["user"]["phone"])) {
+    if(!(USER::where('id', $data["user"]["id"])->update(["phone" => $data["user"]["phone"]]))) {
+      return array(
+        "response" => "error",
+        "remark" => "that's an unexpected one..."
+      );
+    }
+    else {
+      $count++;
+    }
+  }
+
+  if(!empty($data["user"]["citizenid"])) {
+    if(!(USER::where('id', $data["user"]["id"])->update(["citizenid" => $data["user"]["citizenid"]]))) {
+      return array(
+        "response" => "error",
+        "remark" => "that's an unexpected one..."
+      );
+    }
+    else {
+      $count++;
+    }
+  }
+
+  return array(
+    "response" => "success",
+    "remark" => $count." fields updated"
+  );
+
+});
+
+Route::put('bank', function(Request $request) {
+  $request = $request->json()->all();
+  $data = $request['data'];
+
+  if(empty($data["user"]["id"]) || empty($data["bank"]["id"])) {
+    return array(
+      "response" => "error",
+      "remark" => "missing some/all payload"
+    );
+  }
+
+  if(!(USER::where('id', $data["user"]["id"])->exists())) {
+    return array(
+      "response" => "error",
+      "remark" => "user not found"
+    );
+  }
+
+  if(!(BANK::where('owner_id', $data["user"]["id"])->where('id', $data["bank"]["id"])->exists())) {
+    return array(
+      "response" => "error",
+      "remark" => "bank account not found"
+    );
+  }
+
+  if(empty($data["bank"]["name"])) {
+    return array(
+      "response" => "success",
+      "remark" => "nothing to do"
+    );
+  }
+  else {
+    if(BANK::where('owner_id', $data["user"]["id"])->where('id', $data["bank"]["id"])->update(["name" => $data["bank"]["name"]])) {
+      return array(
+        "response" => "success",
+        "remark" => "1 field updated"
+      );
+    }
+    else {
+      return array(
+        "response" => "error",
+        "remark" => "that's an unexpected one..."
+      );
+    }
+  }
+
 });
 
 Route::delete('bank', function (Request $request) {
