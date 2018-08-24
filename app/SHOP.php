@@ -6,11 +6,11 @@ use Illuminate\Database\Eloquent\Model;
 
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-class USER extends Model
+class SHOP extends Model
 {
     use SoftDeletes;
 
-    protected $table = 'user';
+    protected $table = 'shop';
   
     protected $fillable = [
     ];
