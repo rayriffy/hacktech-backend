@@ -12,5 +12,15 @@
 */
 
 Route::get('/', function () {
-    return view('welcome');
+  return array(
+    "response" => "error",
+    "remark"=> "access denined"
+  );
+});
+
+Route::fallback(function () {
+  return array(
+    'response' => 'error',
+    'remark'   => 'access denined'
+  );
 });
