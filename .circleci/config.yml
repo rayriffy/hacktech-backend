@@ -1,0 +1,61 @@
+version: 2
+jobs:
+  build:
+    working_directory: ~/hacktech-backend
+    docker:
+      - image: rayriffy/composer-yarn:latest
+        environment:
+          DEPLOY_HOST: $DEPLOY_HOST
+          DEPLOY_COMMAND: $DEPLOY_COMMAND
+      - image: mysql:5.7
+        command: mysqld --character-set-server=utf8mb4 --collation-server=utf8mb4_bin
+        environment:
+          MYSQL_USER: homestead
+          MYSQL_PASSWORD: secret
+          MYSQL_DATABASE: homestead
+          MYSQL_ALLOW_EMPTY_PASSWORD: true
+    steps:
+      - checkout
+      - run:
+          name: Install required packages & Configuration
+          command: |
+            apk update && apk add alpine-sdk
+      - run:
+          name: Config .env file
+          command: |
+            cp .env.example .env
+      - run:
+          name: Manage Composer Packages
+          command: |
+            composer install
+      - run:
+          name: Generate Key
+          command: |
+            php artisan key:generate
+      - run:
+          name: Migrate Database
+          command: |
+            php artisan migrate --force
+  deploy:
+    machine:
+        enabled: true
+    working_directory: ~/hacktech-backend
+    steps:
+      - add_ssh_keys:
+          fingerprints:
+            - "c7:29:52:e0:f0:33:ca:91:1b:30:3a:96:1f:34:a7:fd"
+      - run:
+          name: Deploy Server
+          command: |
+            ssh -i ~/.ssh/id_rsa_c72952e0f033ca911b303a961f34a7fd $DEPLOY_HOST 'cd ~/production/hacktech-backend.rayriffy.com && git pull && composer install && php71 artisan migrate'
+workflows:
+  version: 2
+  build-and-deploy:
+    jobs:
+      - build
+      - deploy:
+          requires:
+            - build
+          filters:
+            branches:
+              only: release
