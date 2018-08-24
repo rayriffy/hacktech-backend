@@ -21,12 +21,28 @@ Route::post('login', function (Request $request) {
   $request = $request->json()->all();
   $data = $request['data'];
 
-  // if (empty($request['data']['division'])) {
-  //     return [
-  //       'response' => 'error',
-  //       'remark'   => 'missing some/all payload',
-  //   ];
-  // }
+  if (empty($data["user"]["id"])) {
+      return [
+        'response' => 'error',
+        'remark'   => 'missing some/all payload',
+    ];
+  }
+
+  if (USER::where('id', $data["user"]["id"])->exists()) {
+    return array(
+      "response" => "success"
+    );
+  }
+  else {
+    $user = new USER;
+    $user->id = $data["user"]["id"];
+    $user->save();
+
+    return array(
+      "response" => "success",
+      "remark" => "new user created"
+    );
+  }
 
 });
 
@@ -231,6 +247,47 @@ Route::get('shop/{user_id}', function ($user_id) {
     "data" => $shop["name"]
   );
 
+});
+
+Route::get('user/{user_id}', function ($user_id) {
+  if(empty($user_id)) {
+    return array(
+      "response" => "error",
+      "remark" => "missing some/all payload"
+    );
+  }
+
+  if(!(USER::where('id', $user_id)->exists())) {
+    return array(
+      "response" => "error",
+      "remark" => "user not found"
+    );
+  }
+
+  $user = USER::select('id', 'name', 'email', 'phone', 'citizenid')->where('id', $user_id)->first();
+
+  return array(
+    "response" => "success",
+    "data" => array(
+      "id" => $user["id"],
+      "name" => $user["name"],
+      "email" => $user["email"],
+      "phone" => $user["phone"],
+      "citizenid" => $user["citizenid"]
+    )
+  );
+
+});
+
+Route::get('transaction/{trans_id}', function ($trans_id) {
+  if(empty($trans_id)) {
+    return array(
+      "response" => "error",
+      "remark" => "missing some/all payload"
+    );
+  }
+
+  // TODO
 });
 
 Route::delete('bank', function (Request $request) {
