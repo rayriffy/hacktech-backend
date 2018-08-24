@@ -40,10 +40,6 @@ jobs:
           name: Generate Key
           command: |
             php artisan key:generate
-      - run:
-          name: Migrate Database
-          command: |
-            php artisan migrate --force
   deploy:
     machine:
         enabled: true
