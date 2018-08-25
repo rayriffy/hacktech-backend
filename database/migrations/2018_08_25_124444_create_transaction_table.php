@@ -25,7 +25,7 @@ class CreateTransactionTable extends Migration
             $table->text('type');
             $table->text('prevhash');
             $table->timestamps();
-            $table->softDeteles();
+            $table->softDeletes();
         });
     }
 

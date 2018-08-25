@@ -24,7 +24,7 @@ class CreateUserTable extends Migration
             $table->text('signature');
             $table->text('pin');
             $table->timestamps();
-            $table->softDeteles();
+            $table->softDeletes();
         });
     }
 

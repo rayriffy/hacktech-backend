@@ -19,7 +19,7 @@ class CreateBankTable extends Migration
             $table->text('provider');
             $table->bigInteger('balance');
             $table->timestamps();
-            $table->softDeteles();
+            $table->softDeletes();
         });
     }
 
