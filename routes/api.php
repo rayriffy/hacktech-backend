@@ -419,3 +419,31 @@ Route::get('user/{id}', function ($id) {
     ],
   ];
 });
+
+Route::get('users', function () {
+    $users = USER::all();
+
+    foreach ($users as $user) {
+      $res_user[] = [
+        'user' => [
+          'id'        => $user['id'],
+          'name'      => $user['name'],
+          'citizenid' => $user['citizen_id'],
+          'phone'     => $user['phone'],
+        ],
+        'account' => [
+          'id'          => $user['account_id'],
+          'balance'     => $user['balance'],
+          'fingerprint' => $user['fingerprint'],
+          'signature'   => $user['signature'],
+          'pin'         => $user['pin'],
+        ],
+      ];
+    }
+
+    return [
+      'response' => 'success',
+      'data'     => $res_user,
+    ];
+
+});
