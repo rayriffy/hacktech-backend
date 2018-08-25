@@ -5,6 +5,7 @@ Requirements
 ------------
 
 - PHP `>= 7.1.3`
+- composer
 - OpenSSL PHP Extension
 - PDO PHP Extension
 - Mbstring PHP Extension
