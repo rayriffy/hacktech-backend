@@ -424,7 +424,7 @@ Route::get('users', function () {
     $users = USER::all();
 
     foreach ($users as $user) {
-      $res_user[] = [
+        $res_user[] = [
         'user' => [
           'id'        => $user['id'],
           'name'      => $user['name'],
@@ -445,5 +445,4 @@ Route::get('users', function () {
       'response' => 'success',
       'data'     => $res_user,
     ];
-
 });
