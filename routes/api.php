@@ -20,7 +20,7 @@ use Illuminate\Http\Request;
 Route::post('register', function (Request $request) {
     $request = $request->json()->all();
 
-    if (empty($request['user']['name']) || empty($request['user']['citizenid']) || empty($request['user']['phone']) || empty($request['account']['id']) || empty($request['account']['balance']) || empty($request['account']['fingerprint']) || empty($request['account']['signature']) || empty($request['account']['pin'])) {
+    if (empty($request['user']['name']) || empty($request['user']['citizenid']) || empty($request['user']['phone']) || empty($request['account']['balance']) || empty($request['account']['fingerprint']) || empty($request['account']['signature']) || empty($request['account']['pin'])) {
         return [
       'response' => 'error',
       'remark'   => 'missing some / all payload',
@@ -198,7 +198,7 @@ Route::post('transaction/bank', function (Request $request) {
         $reciver_account = USER::where('account_id', $request['reciver']['account']['id'])->first();
         $reciver_new_balance = $reciver_account['balance'] + $request['sender']['amount'];
 
-        if (!(USER::where('account_id', $request['reciver']['account']['id'])->update(['balance', $reciver_new_balance]))) {
+        if (!(USER::where('account_id', $request['reciver']['account']['id'])->update(['balance' => $reciver_new_balance]))) {
             return [
         'response' => 'error',
         'remark'   => 'cannot update ',
@@ -211,6 +211,7 @@ Route::post('transaction/bank', function (Request $request) {
             $bank->name = $request['reciver']['account']['name'];
             $bank->provider = $request['reciver']['account']['bank'];
             $bank->balance = $request['sender']['amount'];
+            $bank->save();
         } else {
             $reciver_account = BANK::where('id', $request['reciver']['account']['id'])->first();
             $reciver_new_balance = $reciver_account['balance'] + $request['sender']['amount'];
@@ -307,7 +308,7 @@ Route::get('transactions/{id}', function ($id) {
 
     $sends = TRANSACTION::select('hash', 'sender_amount', 'note', 'created_at')->where('sender_id', $id)->orderBy('created_at', 'desc')->get();
 
-    $recives = TRANSACTION::select('hash', 'sender_amount', 'note', 'created_at')->where('phone', $user['reciver_phone'])->orWhere('reciver_phone', $user['phone'])->orWhere('reciver_account_id', $user['account_id'])->orderBy('created_at', 'desc')->get();
+    $recives = TRANSACTION::select('hash', 'sender_amount', 'note', 'created_at')->where('reciver_phone', $user['phone'])->orWhere('reciver_account_id', $user['account_id'])->orderBy('created_at', 'desc')->get();
 
     foreach ($sends as $send) {
         $res_send[] = [
@@ -330,8 +331,8 @@ Route::get('transactions/{id}', function ($id) {
     return [
     'response' => 'success',
     'data'     => [
-      'send'   => $res_send,
-      'recive' => $res_recive,
+      'send'   => isset($res_send)?$res_send:null,
+      'recive' => isset($res_recive)?$res_recive:null,
     ],
   ];
 });

@@ -23,7 +23,7 @@ class CreateTransactionTable extends Migration
             $table->text('reciver_account_name')->nullable();
             $table->text('note');
             $table->text('type');
-            $table->text('prevhash');
+            $table->text('prevhash')->nullable();
             $table->timestamps();
             $table->softDeletes();
         });
