@@ -331,8 +331,8 @@ Route::get('transactions/{id}', function ($id) {
     return [
     'response' => 'success',
     'data'     => [
-      'send'   => isset($res_send)?$res_send:null,
-      'recive' => isset($res_recive)?$res_recive:null,
+      'send'   => isset($res_send) ? $res_send : null,
+      'recive' => isset($res_recive) ? $res_recive : null,
     ],
   ];
 });
