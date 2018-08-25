@@ -7,11 +7,11 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class USER extends Model
 {
-  use SoftDeletes;
+    use SoftDeletes;
 
-  protected $table = 'user';
+    protected $table = 'user';
 
-  protected $fillable = [
+    protected $fillable = [
     'id',
     'name',
     'citizen_id',
@@ -20,12 +20,12 @@ class USER extends Model
     'balance',
     'fingerprint',
     'signature',
-    'pin'
+    'pin',
   ];
 
-  protected $hidden = [
+    protected $hidden = [
     'deleted_at',
   ];
 
-  protected $dates = ['deleted_at'];
+    protected $dates = ['deleted_at'];
 }

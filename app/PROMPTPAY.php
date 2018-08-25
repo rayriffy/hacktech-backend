@@ -7,18 +7,18 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class PROMPTPAY extends Model
 {
-  use SoftDeletes;
+    use SoftDeletes;
 
-  protected $table = 'promptpay';
+    protected $table = 'promptpay';
 
-  protected $fillable = [
+    protected $fillable = [
     'phone',
-    'balance'
+    'balance',
   ];
 
-  protected $hidden = [
+    protected $hidden = [
     'deleted_at',
   ];
 
-  protected $dates = ['deleted_at'];
+    protected $dates = ['deleted_at'];
 }

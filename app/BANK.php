@@ -7,20 +7,20 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class BANK extends Model
 {
-  use SoftDeletes;
+    use SoftDeletes;
 
-  protected $table = 'bank';
+    protected $table = 'bank';
 
-  protected $fillable = [
+    protected $fillable = [
     'id',
     'name',
     'provider',
-    'balance'
+    'balance',
   ];
 
-  protected $hidden = [
+    protected $hidden = [
     'deleted_at',
   ];
 
-  protected $dates = ['deleted_at'];
+    protected $dates = ['deleted_at'];
 }

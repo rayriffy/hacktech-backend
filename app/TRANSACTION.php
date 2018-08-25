@@ -7,11 +7,11 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class TRANSACTION extends Model
 {
-  use SoftDeletes;
+    use SoftDeletes;
 
-  protected $table = 'transaction';
+    protected $table = 'transaction';
 
-  protected $fillable = [
+    protected $fillable = [
     'hash',
     'sender_id',
     'sender_amount',
@@ -21,12 +21,12 @@ class TRANSACTION extends Model
     'reciver_account_name',
     'note',
     'type',
-    'prevhash'
+    'prevhash',
   ];
 
-  protected $hidden = [
+    protected $hidden = [
     'deleted_at',
   ];
 
-  protected $dates = ['deleted_at'];
+    protected $dates = ['deleted_at'];
 }
