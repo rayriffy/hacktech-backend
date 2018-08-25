@@ -14,15 +14,18 @@ class CreateTransactionTable extends Migration
     public function up()
     {
         Schema::create('transaction', function (Blueprint $table) {
-            $table->text('transaction_id');
-            $table->text('relationship');
+            $table->text('hash');
             $table->text('sender_id');
-            $table->text('sender_bank');
-            $table->bigInteger('sender_ammount');
-            $table->text('reciver_id');
-            $table->text('reciver_bank');
+            $table->text('sender_amount');
+            $table->string('reciver_phone')->nullable();
+            $table->string('reciver_account_id')->nullable();
+            $table->text('reciver_account_bank')->nullable();
+            $table->text('reciver_account_name')->nullable();
+            $table->text('note');
+            $table->text('type');
+            $table->text('prevhash');
             $table->timestamps();
-            $table->SoftDeletes();
+            $table->softDeteles();
         });
     }
 

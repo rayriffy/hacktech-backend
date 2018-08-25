@@ -12,11 +12,15 @@ class BANK extends Model
     protected $table = 'bank';
 
     protected $fillable = [
-    ];
+    'id',
+    'name',
+    'provider',
+    'balance',
+  ];
 
     protected $hidden = [
-      'deleted_at',
-    ];
+    'deleted_at',
+  ];
 
     protected $dates = ['deleted_at'];
 }

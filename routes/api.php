@@ -1,7 +1,7 @@
 <?php
 
 use App\BANK;
-use App\SHOP;
+use App\PROMPTPAY;
 use App\TRANSACTION;
 use App\USER;
 use Illuminate\Http\Request;
@@ -17,474 +17,404 @@ use Illuminate\Http\Request;
 |
 */
 
-Route::post('login', function (Request $request) {
+Route::post('register', function (Request $request) {
     $request = $request->json()->all();
-    $data = $request['data'];
 
-    if (empty($data['user']['id'])) {
+    if (empty($request['user']['id']) || empty($request['user']['name']) || empty($request['user']['citizenid']) || empty($request['user']['phone']) || empty($request['account']['id']) || empty($request['account']['balance']) || empty($request['account']['fingerprint']) || empty($request['account']['signature']) || empty($request['account']['pin'])) {
         return [
-        'response' => 'error',
-        'remark'   => 'missing some/all payload',
+      'response' => 'error',
+      'remark'   => 'missing some / all payload',
     ];
     }
 
-    if (USER::where('id', $data['user']['id'])->exists()) {
+    if (USER::where('citizen_id', $request['user']['citizenid'])->exists()) {
         return [
-      'response' => 'success',
+      'response' => 'error',
+      'remark'   => 'citizenid is already exists',
     ];
-    } else {
-        $user = new USER();
-        $user->id = $data['user']['id'];
-        $user->save();
-
+    } elseif (USER::where('phone', $request['user']['phone'])->exists()) {
         return [
-      'response' => 'success',
-      'remark'   => 'new user created',
+      'response' => 'error',
+      'remark'   => 'phone number is already exists',
     ];
     }
+
+    $userid = str_random(32);
+
+    $number = '1234567890';
+    $numberLength = strlen($number);
+    $account_id = '';
+    for ($i = 0; $i < 10; $i++) {
+        $account_id .= $number[rand(0, $numberLength - 1)];
+    }
+
+    $user = new USER();
+    $user->id = $userid;
+    $user->name = $request['user']['name'];
+    $user->citizen_id = $request['user']['citizenid'];
+    $user->phone = $request['user']['phone'];
+    $user->account_id = $account_id;
+    $user->balance = $request['account']['balance'];
+    $user->fingerprint = $request['account']['fingerprint'];
+    $user->signature = $request['account']['signature'];
+    $user->pin = $request['account']['pin'];
+    $user->save();
+
+    return [
+    'response' => 'success',
+    'remark'   => 'user created at id '.$userid,
+    'data'     => [
+      'account' => [
+        'id' => $account_id,
+      ],
+      'user' => [
+        'id' => $userid,
+      ],
+    ],
+  ];
 });
 
-Route::post('bank', function (Request $request) {
+Route::post('transaction/promptpay', function (Request $request) {
     $request = $request->json()->all();
-    $data = $request['data'];
 
-    if (empty($data['user']['id']) || empty($data['bank']['name']) || empty($data['bank']['provider']) || empty($data['bank']['accountid'])) {
+    if (empty($request['note']) || empty($request['sender']['id']) || empty($request['sender']['amount']) || empty($request['reciver']['phone'])) {
         return [
       'response' => 'error',
-      'remark'   => 'missing some/all payload',
+      'remark'   => 'missing some / all payload',
     ];
     }
 
-    if (BANK::where('owner_id', $data['user']['id'])->where('bank_provider', $data['bank']['provider'])->where('bank_accountid', $data['bank']['accountid'])->exists()) {
-        return [
-      'response' => 'error',
-      'remark'   => 'bank account is already exists',
-    ];
-    } else {
-        $bank = new BANK();
-        $bank->id = str_random(32);
-        $bank->owner_id = $data['user']['id'];
-        $bank->bank_name = $data['bank']['name'];
-        $bank->bank_provider = $data['bank']['provider'];
-        $bank->bank_accountid = $data['bank']['accountid'];
-        $bank->save();
-
-        return [
-      'response' => 'success',
-    ];
-    }
-});
-
-Route::post('money', function (Request $request) {
-    $request = $request->json()->all();
-    $data = $request['data'];
-
-    if (empty($data['user']['id']) || empty($data['bank']['id']) || empty($data['bank']['amount'])) {
-        return [
-      'response' => 'error',
-      'remark'   => 'missing some/all payload',
-    ];
-    }
-
-    if (!(USER::where('id', $data['user']['id'])->exists())) {
-        return [
-      'response' => 'error',
-      'remark'   => 'user does not exist',
-    ];
-    }
-
-    if (!(BANK::where('owner_id', $data['user']['id'])->where('id', $data['bank']['id'])->exists())) {
-        return [
-      'response' => 'error',
-      'remark'   => 'bank does not exist',
-    ];
-    }
-
-    $bank_account = BANK::select('amount')->where('owner_id', $data['user']['id'])->where('id', $data['bank']['id'])->first();
-    $new_amount = $bank_account['amount'] + $data['bank']['amount'];
-    if (BANK::where('owner_id', $data['user']['id'])->where('id', $data['bank']['id'])->update(['amount' => $new_amount])) {
-        return [
-      'response' => 'success',
-      'remark'   => $data['bank']['amount'].' added to account '.$data['bank']['id'].' of '.$data['user']['id'],
-    ];
-    } else {
-        return [
-      'response' => 'error',
-      'remark'   => "that's an unexpected one...",
-    ];
-    }
-});
-
-Route::post('shop', function (Request $request) {
-    $request = $request->json()->all();
-    $data = $request['data'];
-
-    if (empty($data['user']['id']) || empty($data['shop']['name'])) {
-        return [
-      'response' => 'error',
-      'remark'   => 'missing some/all payload',
-    ];
-    }
-
-    if (SHOP::where('id', $data['user']['id'])->exists()) {
-        if (SHOP::where('id', $data['user']['id'])->update(['name' => $data['shop']['name']])) {
-            return [
-        'response' => 'success',
-      ];
-        } else {
-            return [
-        'response' => 'error',
-        'remark'   => "that's an unexpected one...",
-      ];
-        }
-    } else {
-        $shop = new SHOP();
-        $shop->id = $data['user']['id'];
-        $shop->name = $data['shop']['name'];
-        $shop->save();
-
-        return [
-      'response' => 'success',
-    ];
-    }
-});
-
-Route::post('transaction', function (Request $request) {
-    $request = $request->json()->all();
-    $data = $request['data'];
-
-    if (empty($data['sender']['id']) || empty($data['sender']['bank']) || empty($data['sender']['amount']) || empty($data['reciver']['id']) || empty($data['reciver']['bank'])) {
-        return [
-      'response' => 'error',
-      'remark'   => 'missing some/all payload',
-    ];
-    }
-
-    if ($data['sender']['amount'] < 0) {
-        return [
-      'response' => 'error',
-      'remark'   => 'amount could not be lower than 0',
-    ];
-    }
-
-    if (!(USER::where('id', $data['sender']['id'])->exists())) {
+    if (!(USER::where('id', $request['sender']['id'])->exists())) {
         return [
       'response' => 'error',
       'remark'   => 'sender id not found',
     ];
-    } elseif (!(USER::where('id', $data['reciver']['id'])->exists())) {
+    } elseif ($request['sender']['amount'] <= 0) {
         return [
       'response' => 'error',
-      'remark'   => 'reciver id not found',
+      'remark'   => 'amount must higher than 0',
     ];
     }
 
-    if (!(BANK::where('id', $data['sender']['bank'])->where('owner_id', $data['sender']['id'])->exists())) {
-        return [
-      'response' => 'error',
-      'remark'   => 'sender bank account not found',
-    ];
-    } elseif (!(BANK::where('id', $data['reciver']['bank'])->where('owner_id', $data['sender']['id'])->exists())) {
-        return [
-      'response' => 'error',
-      'remark'   => 'reciver bank account not found',
-    ];
-    }
+    $sender_account = USER::select('balance', 'account_id')->where('id', $request['sender']['id'])->first();
+    $sender_new_balance = $sender_account['balance'] - $request['sender']['amount'];
 
-    $sender = BANK::select('amount')->where('id', $data['sender']['bank'])->where('owner_id', $data['sender']['id'])->first();
-
-    if ($sender['amount'] - $data['sender']['amount'] < 0) {
+    if ($sender_new_balance < 0) {
         return [
       'response' => 'error',
       'remark'   => 'insufficient funds',
     ];
     }
 
-    $reciver = BANK::select('amount')->where('id', $data['reciver']['bank'])->where('owner_id', $data['reciver']['id'])->first();
+    if (!(USER::where('id', $request['sender']['id'])->update(['balance' => $sender_new_balance]))) {
+        return [
+      'response' => 'error',
+      'remark'   => 'cannot update sender funds',
+    ];
+    }
 
-    $last_transaction = TRANSACTION::where('status', true)->last();
+    if (PROMPTPAY::where('phone', $request['reciver']['phone'])->exists()) {
+        $reciver_account = PROMPTPAY::where('phone', $request['reciver']['phone'])->first();
+        $reciver_new_balance = $reciver_account['balance'] + $request['sender']['amount'];
 
-    $transaction_id = str_random(128);
-
-    if (BANK::where('id', $data['sender']['bank'])->where('owner_id', $data['sender']['id'])->update(['amount', $sender['amount'] - $data['sender']['amount']])) {
-        $trans = new TRANSACTION();
-        $trans->id = $transaction_id;
-        $trans->relationship = $last_transaction['id'];
-        $trans->sender_id = $data['sender']['id'];
-        $trans->sender_bank = $data['sender']['bank'];
-        $trans->sender_amount = $data['sender']['amount'];
-        $trans->sender_id = $data['sender']['id'];
-        $trans->reciver_id = $data['reciver']['id'];
-        $trans->reciver_bank = $data['reciver']['bank'];
-        $trans->save();
-
-        if (BANK::where('id', $data['reciver']['bank'])->where('owner_id', $data['reciver']['id'])->update(['amount', $reciver['amount'] + $data['reciver']['amount']])) {
-            TRANSACTION::where('id', $transaction_id)->update(['status', true]);
-
-            return [
-        'response' => 'success',
-        'remark'   => 'transaction saved at '.$transaction_id,
-      ];
-        } else {
+        if (!(PROMPTPAY::where('phone', $request['reciver']['phone'])->update(['balance' => $reciver_new_balance]))) {
             return [
         'response' => 'error',
-        'remark'   => 'could not change reciver amount, transaction '.$transaction_id.' status set as incomplete',
+        'remark'   => 'cannot update reciver funds',
       ];
         }
     } else {
-        return [
-      'response' => 'error',
-      'remark'   => 'could not change sender amount, transaction not created',
-    ];
-    }
-});
-
-Route::get('bank/{user_id}', function ($user_id) {
-    if (empty($user_id)) {
-        return [
-      'response' => 'error',
-      'remark'   => 'missing some/all payload',
-    ];
+        $prompt = new PROMPTPAY();
+        $prompt->phone = $request['reciver']['phone'];
+        $prompt->balance = $request['sender']['amount'];
+        $prompt->save();
     }
 
-    if (!(BANK::where('owner_id', $user_id)->exists())) {
-        return [
-      'response' => 'error',
-      'remark'   => 'bank not found',
-    ];
-    }
+    $transaction_id = str_random(256);
 
-    $banks = BANK::select('id', 'bank_name', 'bank_provider', 'bank_accountid')->where('owner_id', $user_id)->get();
+    $last_transaction = TRANSACTION::all()->last();
 
-    foreach ($banks as $dat) {
-        $bank[] = [
-      'id'        => $dat['bank'],
-      'name'      => $dat['bank_name'],
-      'provider'  => $dat['bank_provider'],
-      'accountid' => $dat['bank_accountid'],
-    ];
-    }
+    $trans = new TRANSACTION();
+    $trans->hash = $transaction_id;
+    $trans->sender_id = $request['sender']['id'];
+    $trans->sender_amount = $request['sender']['amount'];
+    $trans->reciver_phone = $request['reciver']['phone'];
+    $trans->note = $request['note'];
+    $trans->type = 'promptpay';
+    $trans->prevhash = $last_transaction['hash'];
+    $trans->save();
 
     return [
     'response' => 'success',
-    'data'     => $bank,
-  ];
-});
-
-Route::get('amount/{user_id}/{bank_id}', function ($user_id, $bank_id) {
-    if (empty($user_id) || empty($bank_id)) {
-        return [
-      'response' => 'error',
-      'remark'   => 'missing some/all payload',
-    ];
-    }
-
-    if (!(USER::where('id', $user_id)->exists())) {
-        return [
-      'response' => 'error',
-      'remark'   => 'user not found',
-    ];
-    }
-
-    if (!(BANK::where('owner_id', $user_id)->where('id', $bank_id)->exists())) {
-        return [
-      'response' => 'error',
-      'remark'   => 'bank account not found',
-    ];
-    }
-
-    $bank = BANK::select('amount')->where('owner_id', $user_id)->where('id', $bank_id)->first();
-
-    return [
-    'response' => 'success',
-    'data'     => $bank['amount'],
-  ];
-});
-
-Route::get('shop/{user_id}', function ($user_id) {
-    if (empty($user_id)) {
-        return [
-      'response' => 'error',
-      'remark'   => 'missing some/all payload',
-    ];
-    }
-
-    if (!(USER::where('id', $user_id)->exists())) {
-        return [
-      'response' => 'error',
-      'remark'   => 'user not found',
-    ];
-    }
-
-    $shop = SHOP::select('name')->where('id', $user_id)->first();
-
-    return [
-    'response' => 'success',
-    'data'     => $shop['name'],
-  ];
-});
-
-Route::get('user/{user_id}', function ($user_id) {
-    if (empty($user_id)) {
-        return [
-      'response' => 'error',
-      'remark'   => 'missing some/all payload',
-    ];
-    }
-
-    if (!(USER::where('id', $user_id)->exists())) {
-        return [
-      'response' => 'error',
-      'remark'   => 'user not found',
-    ];
-    }
-
-    $user = USER::select('id', 'name', 'email', 'phone', 'citizenid')->where('id', $user_id)->first();
-
-    return [
-    'response' => 'success',
+    'remark'   => 'transaction created and being in process',
     'data'     => [
-      'id'        => $user['id'],
-      'name'      => $user['name'],
-      'email'     => $user['email'],
-      'phone'     => $user['phone'],
-      'citizenid' => $user['citizenid'],
+      'transaction' => [
+        'id' => $transaction_id,
+      ],
     ],
   ];
 });
 
-// TODO
-Route::get('transaction/{trans_id}', function ($trans_id) {
-    if (empty($trans_id)) {
+Route::post('transaction/bank', function (Request $request) {
+    $request = $request->json()->all();
+
+    if (empty($request['note']) || empty($request['sender']['id']) || empty($request['sender']['amount']) || empty($request['reciver']['account']['id']) || empty($request['reciver']['account']['bank']) || empty($request['reciver']['account']['name'])) {
         return [
       'response' => 'error',
-      'remark'   => 'missing some/all payload',
+      'remark'   => 'missing some / all payload',
     ];
     }
+
+    if (!(USER::where('id', $request['sender']['id'])->exists())) {
+        return [
+      'response' => 'error',
+      'remark'   => 'sender id not found',
+    ];
+    } elseif ($request['sender']['amount'] <= 0) {
+        return [
+      'response' => 'error',
+      'remark'   => 'amount must higher than 0',
+    ];
+    }
+
+    $sender_account = USER::select('balance', 'account_id')->where('id', $request['sender']['id'])->first();
+    $sender_new_balance = $sender_account['balance'] - $request['sender']['amount'];
+
+    if ($sender_new_balance < 0) {
+        return [
+      'response' => 'error',
+      'remark'   => 'insufficient funds',
+    ];
+    }
+
+    if (!(USER::where('id', $request['sender']['id'])->update(['balance' => $sender_new_balance]))) {
+        return [
+      'response' => 'error',
+      'remark'   => 'cannot update sender funds',
+    ];
+    }
+
+    if (USER::where('account_id', $request['reciver']['account']['id'])->exists()) {
+        $reciver_account = USER::where('account_id', $request['reciver']['account']['id'])->first();
+        $reciver_new_balance = $reciver_account['balance'] + $request['sender']['amount'];
+
+        if (!(USER::where('account_id', $request['reciver']['account']['id'])->update(['balance', $reciver_new_balance]))) {
+            return [
+        'response' => 'error',
+        'remark'   => 'cannot update ',
+      ];
+        }
+    } else {
+        if (!(BANK::where('id', $request['reciver']['account']['id'])->exists())) {
+            $bank = new BANK();
+            $bank->id = $request['reciver']['account']['id'];
+            $bank->name = $request['reciver']['account']['name'];
+            $bank->provider = $request['reciver']['account']['bank'];
+            $bank->balance = $request['sender']['amount'];
+        } else {
+            $reciver_account = BANK::where('id', $request['reciver']['account']['id'])->first();
+            $reciver_new_balance = $reciver_account['balance'] + $request['sender']['amount'];
+
+            if (!(BANK::where('id', $request['reciver']['account']['id'])->update(['balance', $reciver_new_balance]))) {
+                return [
+          'response' => 'error',
+          'remark'   => 'cannot update ',
+        ];
+            }
+        }
+    }
+
+    $transaction_id = str_random(256);
+
+    $last_transaction = TRANSACTION::all()->last();
+
+    $trans = new TRANSACTION();
+    $trans->hash = $transaction_id;
+    $trans->sender_id = $request['sender']['id'];
+    $trans->sender_amount = $request['sender']['amount'];
+    $trans->reciver_account_id = $request['reciver']['account']['id'];
+    $trans->reciver_account_name = $request['reciver']['account']['name'];
+    $trans->reciver_account_bank = $request['reciver']['account']['bank'];
+    $trans->note = $request['note'];
+    $trans->type = 'bank';
+    $trans->prevhash = $last_transaction['hash'];
+    $trans->save();
+
+    return [
+    'response' => 'success',
+    'remark'   => 'transaction created and being in process',
+    'data'     => [
+      'transaction' => [
+        'id' => $transaction_id,
+      ],
+    ],
+  ];
 });
 
-Route::put('user', function (Request $request) {
-    $request = $request->json()->all();
-    $data = $request['data'];
-    $count = 0;
-
-    if (empty($data['user']['id'])) {
+Route::get('user/{id}', function ($id) {
+    if (empty($id)) {
         return [
       'response' => 'error',
-      'remark'   => 'missing some/all payload',
+      'remark'   => 'missing some / all payload',
     ];
     }
 
-    if (!(USER::where('id', $data['user']['id'])->exists())) {
+    if (!(USER::where('id', $id)->exists())) {
         return [
       'response' => 'error',
       'remark'   => 'user not found',
     ];
     }
 
-    if (!empty($data['user']['name'])) {
-        if (!(USER::where('id', $data['user']['id'])->update(['name' => $data['user']['name']]))) {
-            return [
-        'response' => 'error',
-        'remark'   => "that's an unexpected one...",
-      ];
-        } else {
-            $count++;
-        }
+    $user = USER::where('id', $id)->first();
+
+    return [
+    'response' => 'success',
+    'data'     => [
+      'user' => [
+        'id'        => $user['id'],
+        'name'      => $user['name'],
+        'citizenid' => $user['citizen_id'],
+        'phone'     => $user['phone'],
+      ],
+      'account' => [
+        'id'          => $user['account_id'],
+        'balance'     => $user['balance'],
+        'fingerprint' => $user['fingerprint'],
+        'signature'   => $user['signature'],
+        'pin'         => $user['pin'],
+      ],
+    ],
+  ];
+});
+
+Route::get('transactions/{id}', function ($id) {
+    if (empty($id)) {
+        return [
+      'response' => 'error',
+      'remark'   => 'missing some / all payload',
+    ];
     }
 
-    if (!empty($data['user']['email'])) {
-        if (!(USER::where('id', $data['user']['id'])->update(['email' => $data['user']['email']]))) {
-            return [
-        'response' => 'error',
-        'remark'   => "that's an unexpected one...",
-      ];
-        } else {
-            $count++;
-        }
+    if (!(USER::where('id', $id)->exists())) {
+        return [
+      'response' => 'error',
+      'remark'   => 'user not found',
+    ];
     }
 
-    if (!empty($data['user']['phone'])) {
-        if (!(USER::where('id', $data['user']['id'])->update(['phone' => $data['user']['phone']]))) {
-            return [
-        'response' => 'error',
-        'remark'   => "that's an unexpected one...",
-      ];
-        } else {
-            $count++;
-        }
+    $user = USER::where('id', $id)->first();
+
+    $sends = TRANSACTION::select('hash', 'sender_amount', 'note', 'created_at')->where('sender_id', $id)->orderBy('created_at', 'desc')->get();
+
+    $recives = TRANSACTION::select('hash', 'sender_amount', 'note', 'created_at')->where('phone', $user['reciver_phone'])->orWhere('reciver_phone', $user['phone'])->orWhere('reciver_account_id', $user['account_id'])->orderBy('created_at', 'desc')->get();
+
+    foreach ($sends as $send) {
+        $res_send[] = [
+      'id'         => $send['hash'],
+      'amount'     => $send['amount'],
+      'note'       => $send['note'],
+      'created_at' => $send['created_at'],
+    ];
     }
 
-    if (!empty($data['user']['citizenid'])) {
-        if (!(USER::where('id', $data['user']['id'])->update(['citizenid' => $data['user']['citizenid']]))) {
-            return [
-        'response' => 'error',
-        'remark'   => "that's an unexpected one...",
-      ];
-        } else {
-            $count++;
-        }
+    foreach ($recives as $recive) {
+        $res_recive[] = [
+      'id'         => $recive['hash'],
+      'amount'     => $recive['amount'],
+      'note'       => $recive['note'],
+      'created_at' => $recive['created_at'],
+    ];
     }
 
     return [
     'response' => 'success',
-    'remark'   => $count.' fields updated',
+    'data'     => [
+      'send'   => $res_send,
+      'recive' => $res_recive,
+    ],
   ];
 });
 
-Route::put('bank', function (Request $request) {
-    $request = $request->json()->all();
-    $data = $request['data'];
-
-    if (empty($data['user']['id']) || empty($data['bank']['id'])) {
+Route::get('transaction/{id}', function ($id) {
+    if (empty($id)) {
         return [
       'response' => 'error',
-      'remark'   => 'missing some/all payload',
+      'remark'   => 'missing some / all payload',
     ];
     }
 
-    if (!(USER::where('id', $data['user']['id'])->exists())) {
+    if (!(TRANSACTION::where('hash', $id)->exists())) {
         return [
       'response' => 'error',
       'remark'   => 'user not found',
     ];
     }
 
-    if (!(BANK::where('owner_id', $data['user']['id'])->where('id', $data['bank']['id'])->exists())) {
-        return [
-      'response' => 'error',
-      'remark'   => 'bank account not found',
-    ];
-    }
+    $trans = TRANSACTION::where('hash', $id)->first();
 
-    if (empty($data['bank']['name'])) {
-        return [
-      'response' => 'success',
-      'remark'   => 'nothing to do',
+    if ($trans['type'] === 'promptpay') {
+        $res_reciver = [
+      'phone' => $trans['reciver_phone'],
     ];
     } else {
-        if (BANK::where('owner_id', $data['user']['id'])->where('id', $data['bank']['id'])->update(['name' => $data['bank']['name']])) {
-            return [
-        'response' => 'success',
-        'remark'   => '1 field updated',
-      ];
-        } else {
-            return [
-        'response' => 'error',
-        'remark'   => "that's an unexpected one...",
-      ];
-        }
-    }
-});
-
-Route::delete('bank', function (Request $request) {
-    $request = $request->json()->all();
-    $data = $request['data'];
-
-    if (empty($data['user']['id']) || empty($data['bank']['id'])) {
-        return [
-      'response' => 'error',
-      'remark'   => 'missing some/all payload',
+        $res_reciver = [
+      'bank' => $trans['reciver_account_bank'],
+      'name' => $trans['reciver_account_name'],
+      'id'   => $trans['reciver_account_id'],
     ];
     }
+
+    return [
+    'response' => 'success',
+    'data'     => [
+      'id'     => $trans['hash'],
+      'sender' => [
+        'id'     => $trans['sender_id'],
+        'amount' => $trans['sender_amount'],
+      ],
+      'reciver'    => $res_reciver,
+      'note'       => $trans['note'],
+      'type'       => $trans['type'],
+      'previd'     => $trans['prevhash'],
+      'created_at' => $trans['created_at'],
+    ],
+  ];
+});
+
+Route::get('user/{id}', function ($id) {
+    if (empty($id)) {
+        return [
+      'response' => 'error',
+      'remark'   => 'missing some / all payload',
+    ];
+    }
+
+    if (!(USER::where('id', $id)->exists())) {
+        return [
+      'response' => 'error',
+      'remark'   => 'user not found',
+    ];
+    }
+
+    $user = USER::where('id', $id)->first();
+
+    return [
+    'response' => 'success',
+    'data'     => [
+      'user' => [
+        'id'        => $user['id'],
+        'name'      => $user['name'],
+        'citizenid' => $user['citizen_id'],
+        'phone'     => $user['phone'],
+      ],
+      'account' => [
+        'id'          => $user['account_id'],
+        'balance'     => $user['balance'],
+        'fingerprint' => $user['fingerprint'],
+        'signature'   => $user['signature'],
+        'pin'         => $user['pin'],
+      ],
+    ],
+  ];
 });

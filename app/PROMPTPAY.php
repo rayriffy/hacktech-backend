@@ -5,18 +5,20 @@ namespace App;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-class SHOP extends Model
+class PROMPTPAY extends Model
 {
     use SoftDeletes;
 
-    protected $table = 'shop';
+    protected $table = 'promptpay';
 
     protected $fillable = [
-    ];
+    'phone',
+    'balance',
+  ];
 
     protected $hidden = [
-      'deleted_at',
-    ];
+    'deleted_at',
+  ];
 
     protected $dates = ['deleted_at'];
 }

@@ -15,12 +15,16 @@ class CreateUserTable extends Migration
     {
         Schema::create('user', function (Blueprint $table) {
             $table->text('id');
-            $table->text('name')->nullable();
-            $table->text('email')->nullable();
-            $table->string('phone')->nullable();
-            $table->string('citizenid')->nullable();
+            $table->text('name');
+            $table->text('citizen_id');
+            $table->string('phone');
+            $table->string('account_id');
+            $table->bigInteger('balance');
+            $table->text('fingerprint');
+            $table->text('signature');
+            $table->text('pin');
             $table->timestamps();
-            $table->SoftDeletes();
+            $table->softDeteles();
         });
     }
 
