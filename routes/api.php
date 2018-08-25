@@ -158,7 +158,98 @@ Route::post('shop', function (Request $request) {
 });
 
 Route::post('transaction', function (Request $request) {
-   // TODO 
+  $request = $request->json()->all();
+  $data = $request['data'];
+
+  if (empty($data["sender"]["id"]) || empty($data["sender"]["bank"]) || empty($data["sender"]["amount"]) || empty($data["reciver"]["id"]) || empty($data["reciver"]["bank"])) {
+    return array(
+      "response" => "error",
+      "remark" => "missing some/all payload"
+    );
+  }
+
+  if ($data["sender"]["amount"] < 0) {
+    return array(
+      "response" => "error",
+      "remark" => "amount could not be lower than 0"
+    );
+  }
+
+  if (!(USER::where('id', $data["sender"]["id"])->exists())) {
+    return array(
+      "response" => "error",
+      "remark" => "sender id not found"
+    );
+  }
+  else if (!(USER::where('id', $data["reciver"]["id"])->exists())) {
+    return array(
+      "response" => "error",
+      "remark" => "reciver id not found"
+    );
+  }
+
+  if (!(BANK::where('id', $data["sender"]["bank"])->where('owner_id', $data["sender"]["id"])->exists())) {
+    return array(
+      "response" => "error",
+      "remark" => "sender bank account not found"
+    );
+  }
+  else if (!(BANK::where('id', $data["reciver"]["bank"])->where('owner_id', $data["sender"]["id"])->exists())) {
+    return array(
+      "response" => "error",
+      "remark" => "reciver bank account not found"
+    );
+  }
+
+  $sender = BANK::select('amount')->where('id', $data["sender"]["bank"])->where('owner_id', $data["sender"]["id"])->first();
+
+  if($sender["amount"] - $data["sender"]["amount"] < 0) {
+    return array(
+      "response" => "error",
+      "remark" => "insufficient funds"
+    );
+  }
+
+  $reciver = BANK::select('amount')->where('id', $data["reciver"]["bank"])->where('owner_id', $data["reciver"]["id"])->first();
+
+  $last_transaction = TRANSACTION::where('status', true)->last();
+
+  $transaction_id = str_random(128);
+
+  if(BANK::where('id', $data["sender"]["bank"])->where('owner_id', $data["sender"]["id"])->update(["amount", $sender["amount"] - $data["sender"]["amount"]])) {
+    $trans = new TRANSACTION;
+    $trans->id = $transaction_id;
+    $trans->relationship = $last_transaction["id"];
+    $trans->sender_id = $data["sender"]["id"];
+    $trans->sender_bank = $data["sender"]["bank"];
+    $trans->sender_amount = $data["sender"]["amount"];
+    $trans->sender_id = $data["sender"]["id"];
+    $trans->reciver_id = $data["reciver"]["id"];
+    $trans->reciver_bank = $data["reciver"]["bank"];
+    $trans->save();
+
+    if(BANK::where('id', $data["reciver"]["bank"])->where('owner_id', $data["reciver"]["id"])->update(["amount", $reciver["amount"] + $data["reciver"]["amount"]])) {
+
+      TRANSACTION::where('id', $transaction_id)->update(["status", true]);
+      return array(
+        "response" => "success",
+        "remark" => "transaction saved at " . $transaction_id
+      );
+    }
+    else {
+      return array(
+        "response" => "error",
+        "remark" => "could not change reciver amount, transaction " . $transaction_id . " status set as incomplete"
+      );
+    }
+  }
+  else {
+    return array(
+      "response" => "error",
+      "remark" => "could not change sender amount, transaction not created"
+    );
+  }
+
 });
 
 Route::get('bank/{user_id}', function ($user_id) {
@@ -279,6 +370,7 @@ Route::get('user/{user_id}', function ($user_id) {
 
 });
 
+// TODO
 Route::get('transaction/{trans_id}', function ($trans_id) {
   if(empty($trans_id)) {
     return array(
@@ -286,8 +378,6 @@ Route::get('transaction/{trans_id}', function ($trans_id) {
       "remark" => "missing some/all payload"
     );
   }
-
-  // TODO
 
 });
 
