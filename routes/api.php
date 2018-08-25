@@ -20,7 +20,7 @@ use Illuminate\Http\Request;
 Route::post('register', function (Request $request) {
     $request = $request->json()->all();
 
-    if (empty($request['user']['id']) || empty($request['user']['name']) || empty($request['user']['citizenid']) || empty($request['user']['phone']) || empty($request['account']['id']) || empty($request['account']['balance']) || empty($request['account']['fingerprint']) || empty($request['account']['signature']) || empty($request['account']['pin'])) {
+    if (empty($request['user']['name']) || empty($request['user']['citizenid']) || empty($request['user']['phone']) || empty($request['account']['id']) || empty($request['account']['balance']) || empty($request['account']['fingerprint']) || empty($request['account']['signature']) || empty($request['account']['pin'])) {
         return [
       'response' => 'error',
       'remark'   => 'missing some / all payload',
