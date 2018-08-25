@@ -17,7 +17,7 @@ class CreatePromptpayTable extends Migration
             $table->string('phone');
             $table->bigInteger('balance');
             $table->timestamps();
-            $table->softDeteles();
+            $table->softDeletes();
         });
     }
 
