@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class CreateShopTable extends Migration
+class AddColumnToTransactionTable extends Migration
 {
     /**
      * Run the migrations.
@@ -13,11 +13,8 @@ class CreateShopTable extends Migration
      */
     public function up()
     {
-        Schema::create('shop', function (Blueprint $table) {
-            $table->text('id');
-            $table->text('name');
-            $table->timestamps();
-            $table->SoftDeletes();
+        Schema::table('transaction', function (Blueprint $table) {
+            $table->boolean('status')->default(false);
         });
     }
 
@@ -28,6 +25,8 @@ class CreateShopTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('shop');
+        Schema::table('transaction', function (Blueprint $table) {
+            $table->dropColumn('status');
+        });
     }
 }
