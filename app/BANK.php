@@ -12,7 +12,7 @@ class BANK extends Model
     protected $table = 'bank';
 
     protected $fillable = [
-    'id',
+    'bank_id',
     'name',
     'provider',
     'balance',
