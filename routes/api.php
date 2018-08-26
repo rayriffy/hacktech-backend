@@ -49,7 +49,7 @@ Route::post('register', function (Request $request) {
     }
 
     $user = new USER();
-    $user->id = $userid;
+    $user->user_id = $userid;
     $user->name = $request['user']['name'];
     $user->citizen_id = $request['user']['citizenid'];
     $user->phone = $request['user']['phone'];
@@ -84,7 +84,7 @@ Route::post('transaction/promptpay', function (Request $request) {
     ];
     }
 
-    if (!(USER::where('id', $request['sender']['id'])->exists())) {
+    if (!(USER::where('user_id', $request['sender']['id'])->exists())) {
         return [
       'response' => 'error',
       'remark'   => 'sender id not found',
@@ -96,7 +96,7 @@ Route::post('transaction/promptpay', function (Request $request) {
     ];
     }
 
-    $sender_account = USER::select('balance', 'account_id')->where('id', $request['sender']['id'])->first();
+    $sender_account = USER::select('balance', 'account_id')->where('user_id', $request['sender']['id'])->first();
     $sender_new_balance = $sender_account['balance'] - $request['sender']['amount'];
 
     if ($sender_new_balance < 0) {
@@ -106,7 +106,7 @@ Route::post('transaction/promptpay', function (Request $request) {
     ];
     }
 
-    if (!(USER::where('id', $request['sender']['id'])->update(['balance' => $sender_new_balance]))) {
+    if (!(USER::where('user_id', $request['sender']['id'])->update(['balance' => $sender_new_balance]))) {
         return [
       'response' => 'error',
       'remark'   => 'cannot update sender funds',
@@ -165,7 +165,7 @@ Route::post('transaction/bank', function (Request $request) {
     ];
     }
 
-    if (!(USER::where('id', $request['sender']['id'])->exists())) {
+    if (!(USER::where('user_id', $request['sender']['id'])->exists())) {
         return [
       'response' => 'error',
       'remark'   => 'sender id not found',
@@ -177,7 +177,7 @@ Route::post('transaction/bank', function (Request $request) {
     ];
     }
 
-    $sender_account = USER::select('balance', 'account_id')->where('id', $request['sender']['id'])->first();
+    $sender_account = USER::select('balance', 'account_id')->where('user_id', $request['sender']['id'])->first();
     $sender_new_balance = $sender_account['balance'] - $request['sender']['amount'];
 
     if ($sender_new_balance < 0) {
@@ -187,7 +187,7 @@ Route::post('transaction/bank', function (Request $request) {
     ];
     }
 
-    if (!(USER::where('id', $request['sender']['id'])->update(['balance' => $sender_new_balance]))) {
+    if (!(USER::where('user_id', $request['sender']['id'])->update(['balance' => $sender_new_balance]))) {
         return [
       'response' => 'error',
       'remark'   => 'cannot update sender funds',
@@ -205,18 +205,18 @@ Route::post('transaction/bank', function (Request $request) {
       ];
         }
     } else {
-        if (!(BANK::where('id', $request['reciver']['account']['id'])->exists())) {
+        if (!(BANK::where('bank_id', $request['reciver']['account']['id'])->exists())) {
             $bank = new BANK();
-            $bank->id = $request['reciver']['account']['id'];
+            $bank->bank_id = $request['reciver']['account']['id'];
             $bank->name = $request['reciver']['account']['name'];
             $bank->provider = $request['reciver']['account']['bank'];
             $bank->balance = $request['sender']['amount'];
             $bank->save();
         } else {
-            $reciver_account = BANK::where('id', $request['reciver']['account']['id'])->first();
+            $reciver_account = BANK::where('bank_id', $request['reciver']['account']['id'])->first();
             $reciver_new_balance = $reciver_account['balance'] + $request['sender']['amount'];
 
-            if (!(BANK::where('id', $request['reciver']['account']['id'])->update(['balance', $reciver_new_balance]))) {
+            if (!(BANK::where('bank_id', $request['reciver']['account']['id'])->update(['balance', $reciver_new_balance]))) {
                 return [
           'response' => 'error',
           'remark'   => 'cannot update ',
@@ -260,20 +260,20 @@ Route::get('user/{id}', function ($id) {
     ];
     }
 
-    if (!(USER::where('id', $id)->exists())) {
+    if (!(USER::where('user_id', $id)->exists())) {
         return [
       'response' => 'error',
       'remark'   => 'user not found',
     ];
     }
 
-    $user = USER::where('id', $id)->first();
+    $user = USER::where('user_id', $id)->first();
 
     return [
     'response' => 'success',
     'data'     => [
       'user' => [
-        'id'        => $user['id'],
+        'id'        => $user['user_id'],
         'name'      => $user['name'],
         'citizenid' => $user['citizen_id'],
         'phone'     => $user['phone'],
@@ -297,14 +297,14 @@ Route::get('transactions/{id}', function ($id) {
     ];
     }
 
-    if (!(USER::where('id', $id)->exists())) {
+    if (!(USER::where('user_id', $id)->exists())) {
         return [
       'response' => 'error',
       'remark'   => 'user not found',
     ];
     }
 
-    $user = USER::where('id', $id)->first();
+    $user = USER::where('user_id', $id)->first();
 
     $sends = TRANSACTION::select('hash', 'sender_amount', 'note', 'created_at')->where('sender_id', $id)->orderBy('created_at', 'desc')->get();
 
@@ -313,7 +313,7 @@ Route::get('transactions/{id}', function ($id) {
     foreach ($sends as $send) {
         $res_send[] = [
       'id'         => $send['hash'],
-      'amount'     => $send['amount'],
+      'amount'     => $send['sender_amount'],
       'note'       => $send['note'],
       'created_at' => $send['created_at'],
     ];
@@ -322,7 +322,7 @@ Route::get('transactions/{id}', function ($id) {
     foreach ($recives as $recive) {
         $res_recive[] = [
       'id'         => $recive['hash'],
-      'amount'     => $recive['amount'],
+      'amount'     => $recive['sender_amount'],
       'note'       => $recive['note'],
       'created_at' => $recive['created_at'],
     ];
@@ -391,20 +391,20 @@ Route::get('user/{id}', function ($id) {
     ];
     }
 
-    if (!(USER::where('id', $id)->exists())) {
+    if (!(USER::where('user_id', $id)->exists())) {
         return [
       'response' => 'error',
       'remark'   => 'user not found',
     ];
     }
 
-    $user = USER::where('id', $id)->first();
+    $user = USER::where('user_id', $id)->first();
 
     return [
     'response' => 'success',
     'data'     => [
       'user' => [
-        'id'        => $user['id'],
+        'id'        => $user['user_id'],
         'name'      => $user['name'],
         'citizenid' => $user['citizen_id'],
         'phone'     => $user['phone'],
@@ -426,7 +426,7 @@ Route::get('users', function () {
     foreach ($users as $user) {
         $res_user[] = [
         'user' => [
-          'id'        => $user['id'],
+          'id'        => $user['user_id'],
           'name'      => $user['name'],
           'citizenid' => $user['citizen_id'],
           'phone'     => $user['phone'],
